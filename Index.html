@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Note Basket</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class', // Enable dark mode based on 'dark' class
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'primary': '#1D4ED8', // Blue-700
+                        'secondary': '#4B5563', // Gray-600
+                        'accent': '#10B981', // Emerald-500
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Font and basic color setup */
+        body {
+            background: #f7f7f7;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .dark {
+            background: #111827; /* Gray-900 for deeper dark mode */
+            color: #e5e7eb;
+        }
+        .container-card {
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transition: background-color 0.3s, box-shadow 0.3s;
+        }
+        .dark .container-card {
+            background: #1f2937; /* Gray-800 */
+        }
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #9ca3af; /* Gray-400 */
+            border-radius: 3px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #4b5563; /* Gray-600 */
+        }
+        /* Drag and Drop Zone Design */
+        #dropZone {
+            border-style: dotted !important;
+        }
+        #dropZone.drag-hover {
+            border-color: #10B981 !important; /* Accent Color */
+            background-color: #10b9811a;
+        }
+        /* Sidebar nesting */
+        .sidebar-folder-item {
+            margin-bottom: 6px;
+            line-height: 1.5;
+            transition: all 0.2s ease-in-out;
+        }
+        .sidebar-folder-item:hover {
+            transform: translateX(4px);
+        }
+        /* Glowing Button Effects */
+        .btn-glow-primary {
+            transition: all 0.3s ease-in-out;
+        }
+        .btn-glow-primary:hover {
+            box-shadow: 0 15px 30px -5px rgba(29, 78, 216, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-glow-red {
+             transition: all 0.3s ease-in-out;
+        }
+        .btn-glow-red:hover {
+            box-shadow: 0 15px 30px -5px rgba(239, 68, 68, 0.4);
+            transform: translateY(-1px);
+        }
+        /* Folder Card Hover */
+        .folder {
+            transition: all 0.3s ease-in-out;
+        }
+        .folder:hover {
+            box-shadow: 0 5px 15px -3px rgba(0, 0, 0, 0.08);
+            border-color: #1D4ED8; /* Primary */
+            transform: translateY(-2px);
+        }
+        .dark .folder:hover {
+            border-color: #10B981; /* Accent */
+            box-shadow: 0 5px 15px -3px rgba(16, 185, 129, 0.15);
+        }
+        /* Search Highlight Style */
+        .highlight {
+            background-color: yellow; /* A standard highlight color */
+            color: black;
+            padding: 1px 2px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        .dark .highlight {
+            background-color: #FEF3C7; /* Yellow-200 */
+            color: #1F2937; /* Gray-800 */
+        }
+        /* --- START: Welcome Splash Styles --- */
+        .splash-vanish {
+            opacity: 0 !important;
+            transform: translateY(-100px) !important; /* Move up */
+        }
+        /* --- END: Welcome Splash Styles --- */
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div id="welcomeSplash" class="fixed inset-0 bg-primary dark:bg-gray-900 z-[9999] flex items-center justify-center transition-all duration-1000">
+        <h1 class="text-4xl sm:text-6xl font-extrabold text-white dark:text-accent opacity-100 transition-all duration-1000">Welcome to Note Basket</h1>
+    </div>
+    <header class="max-w-6xl mx-auto mb-6 flex justify-between items-center">
+        <h2 id="mainTitle" class="text-3xl font-extrabold text-primary dark:text-white">📚 Note Basket</h2>
+        <div class="flex space-x-3 items-center">
+            
+            <button onclick="showRecycleBin()" class="bg-gray-500 text-white p-3 rounded-full shadow-md hover:bg-gray-600 transition duration-150 btn-glow-primary hover:shadow-gray-500/50" title="Recycle Bin">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </button>
+            
+            <button id="darkModeToggle" class="p-3 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow-xl transition-all duration-300 hover:scale-110 hover:ring-4 ring-primary/30 dark:ring-primary/50" title="Toggle Dark Mode">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 12.008 12.008 0 0012.004 21a12.008 12.008 0 008.35-5.646z"></path></svg>
+            </button>
+            
+            <button onclick="showDeveloperDetails()" class="bg-accent text-white p-3 rounded-full shadow-md hover:bg-emerald-600 transition duration-150 btn-glow-primary hover:shadow-accent/50" title="Developer Details">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+            </button>
+
+            <button onclick="changeAdminPassword()" class="bg-secondary text-white p-3 rounded-full shadow-lg shadow-secondary/50 hover:bg-gray-600 transition duration-150 btn-glow-primary hover:shadow-gray-500/50" title="Change Admin Password">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2v5l-2 2h-4l-2-2v-5a2 2 0 012-2h4zM8 9v2m8-2v2m1-7H7a4 4 0 00-4 4v7a4 4 0 004 4h10a4 4 0 004-4V7a4 4 0 00-4-4z"></path></svg>
+            </button>
+        </div>
+    </header>
+
+    <div class="container-card bg-white dark:bg-gray-800 p-6 rounded-xl transition-colors duration-300 max-w-6xl mx-auto flex flex-col lg:flex-row gap-6">
+
+        <div id="mainContent" class="lg:w-full w-full space-y-6 flex flex-col lg:flex-row gap-6">
+            
+            <div id="folderSidebar" class="lg:w-1/4 w-full bg-gray-100 dark:bg-gray-900 p-4 rounded-lg shadow-inner lg:max-h-[500px] overflow-y-auto custom-scrollbar flex-shrink-0 border border-gray-200 dark:border-gray-700">
+                <h3 class="text-xl font-bold mb-4 text-primary dark:text-accent">📁 All Folders</h3>
+                <div id="folderList">
+                    <p class="text-sm text-center text-gray-500 dark:text-gray-400">Loading folders...</p>
+                </div>
+            </div>
+
+            <div id="fileManagerView" class="lg:w-3/4 w-full space-y-6">
+                
+                <div class="space-y-4 border-b pb-4 border-gray-200 dark:border-gray-700">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="folderPath" placeholder="Enter Name Here" class="flex-grow p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-900 rounded-lg focus:ring-primary focus:border-primary transition" />
+                        <button onclick="createFolder()" class="bg-primary text-white font-semibold py-3 px-6 rounded-lg shadow-lg shadow-primary/50 hover:bg-blue-600 transition duration-150 btn-glow-primary">Create Folder</button>
+                    </div>
+
+                    <input type="file" id="fileInput" accept="application/pdf" class="w-full text-sm dark:text-gray-200 p-2 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer transition" />
+                </div>
+                
+                <div id="uploadProgressContainer" class="mt-4" style="display:none;">
+                    <div class="text-sm font-medium text-primary dark:text-accent mb-1 flex justify-between">
+                        <span>Uploading: <span id="progressFileName"></span></span>
+                        <span id="progressBarText">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                        <div id="progressBar" class="bg-primary h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div id="dropZone" class="border-2 border-dashed border-gray-400 dark:border-gray-500 p-10 text-center rounded-xl transition duration-300 text-secondary dark:text-gray-300 font-medium hover:bg-gray-100 dark:hover:bg-gray-900 hover:border-accent">
+                    <span class="text-3xl mb-2 block">⬇️</span>
+                    Drag and drop PDF files here
+                </div>
+
+                <input type="text" id="search" placeholder="Search PDFs..." class="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-900 rounded-lg focus:ring-accent focus:border-accent transition" />
+
+                <div id="searchResults" class="space-y-4 mb-6 p-4 rounded-xl border-2 border-dashed border-accent dark:border-primary bg-yellow-50 dark:bg-gray-900 shadow-xl" style="display:none;">
+                    <h4 class="text-xl font-bold text-accent dark:text-primary border-b pb-2 mb-4">🔎 Search Results (Moved Up)</h4>
+                </div>
+                <div class="flex justify-end pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <button id="multiDeleteBtn" onclick="multiDeleteSelected()" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-lg shadow-lg shadow-red-500/50 hover:bg-red-600 transition duration-150 btn-glow-red" style="display:none;">
+                        Delete Selected 🗑️
+                    </button>
+                </div>
+                <div id="folders" class="space-y-6">
+                    <p class="text-center text-gray-500 dark:text-gray-400 mt-8">Loading files and folders...</p>
+                </div>
+            </div>
+
+            <div id="recycleBinView" class="w-full space-y-6" style="display:none;">
+                 <div class="flex justify-between items-center pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-2xl font-bold text-red-600 dark:text-red-500">🗑️ Recycle Bin</h3>
+                    <div class="flex space-x-2">
+                         <button onclick="loadFolders(); document.getElementById('fileManagerView').style.display='block'; document.getElementById('recycleBinView').style.display='none'; document.getElementById('folderSidebar').style.display='block'; document.getElementById('mainTitle').textContent = '📚 Note Basket';" class="bg-secondary text-white font-semibold py-2 px-4 rounded-lg shadow-lg shadow-secondary/50 hover:bg-gray-600 transition duration-150 btn-glow-primary hover:shadow-gray-500/50">
+                            Back to File Manager
+                        </button>
+                        <button onclick="emptyRecycleBin()" class="bg-red-700 text-white font-semibold py-2 px-4 rounded-lg shadow-lg shadow-red-700/50 hover:bg-red-800 transition duration-150 btn-glow-red">
+                            Permanently Empty
+                        </button>
+                    </div>
+                </div>
+                <div id="recycleBinContent" class="space-y-4">
+                    <p class="text-center text-gray-500 dark:text-gray-400 mt-8">Loading Recycle Bin...</p>
+                </div>
+            </div>
+
+        </div> </div>
+
+
+<div id="customModalOverlay" class="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-75 backdrop-blur-sm z-50 flex items-center justify-center transition-opacity duration-300 opacity-0 pointer-events-none">
+    <div id="customModal" class="bg-white dark:bg-gray-700 p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-transform duration-300 scale-95">
+        <h3 id="modalTitle" class="text-xl font-bold mb-3 text-primary dark:text-accent"></h3>
+        <p id="modalMessage" class="text-gray-700 dark:text-gray-200 mb-4"></p>
+        
+        <input type="text" id="modalInput" class="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-lg focus:ring-primary focus:border-primary transition hidden mb-4" />
+        
+        <div id="modalActions" class="flex justify-end space-x-3">
+            <button id="modalCancelBtn" class="bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100 font-semibold py-2 px-4 rounded-lg hover:bg-gray-400 transition hidden">
+                Cancel
+            </button>
+            <button id="modalConfirmBtn" class="bg-primary text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition btn-glow-primary">
+                OK
+            </button>
+        </div>
+    </div>
+</div>
+
+<footer class="text-center mt-8 pb-4 text-sm text-gray-500 dark:text-gray-400">
+    &copy; 2025 Md.Mohaiminul Islam. All Rights Reserved.
+</footer>
+
+<script>
+    // Welcome Splash Screen Logic (Runs immediately on DOMContentLoaded)
+    document.addEventListener('DOMContentLoaded', () => {
+        const splash = document.getElementById('welcomeSplash');
+        if (splash) {
+            // After 3000ms (3 seconds), start the vanishing animation 
+            setTimeout(() => {
+                // Add the class defined in CSS to trigger the transition to opacity: 0 and move up
+                splash.classList.add('splash-vanish'); 
+            }, 3000); 
+            
+            // After a total of 4000ms (3s wait + 1s transition), remove it from DOM 
+            setTimeout(() => {
+                splash.remove();
+            }, 4000); 
+        }
+    });
+</script>
+
+<script>
+// All JS logic is wrapped in an async IIFE
+(async function() {
+
+// ----------------------
+// Utility: Safe DOM ID creation
+// ----------------------
+function sanitizeId(path){
+    // Create safe ID: replace spaces, slashes, or other special characters with underscore
+    return 'fld_' + path.replace(/[^a-z0-9]/gi,'_');
+}
+
+// =====================
+// Custom Modal Logic
+// =====================
+const modalOverlay = document.getElementById('customModalOverlay');
+const modalTitle = document.getElementById('modalTitle');
+const modalMessage = document.getElementById('modalMessage');
+const modalInput = document.getElementById('modalInput');
+const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+const modalCancelBtn = document.getElementById('modalCancelBtn');
+
+function showModal(title, message, isPrompt, isConfirm, defaultValue) {
+    return new Promise(resolve => {
+        modalTitle.textContent = title;
+        modalMessage.textContent = message;
+
+        // Reset UI
+        modalInput.value = '';
+        modalInput.classList.add('hidden');
+        modalCancelBtn.classList.add('hidden');
+        modalConfirmBtn.textContent = 'OK';
+
+        if (isPrompt) {
+            modalInput.classList.remove('hidden');
+            modalInput.value = defaultValue || '';
+            modalCancelBtn.classList.remove('hidden');
+            modalConfirmBtn.textContent = 'Submit';
+            // Auto-focus the input
+            setTimeout(() => modalInput.focus(), 10);
+        } else if (isConfirm) {
+            modalCancelBtn.classList.remove('hidden');
+            modalConfirmBtn.textContent = 'Yes';
+            modalCancelBtn.textContent = 'No';
+        } else { // Alert
+            modalConfirmBtn.textContent = 'OK';
+        }
+
+        // Show modal with animation
+        modalOverlay.classList.remove('opacity-0', 'pointer-events-none');
+        document.getElementById('customModal').classList.remove('scale-95');
+        
+        // Handlers
+        const confirmHandler = () => {
+            hideModal();
+            if (isPrompt) {
+                resolve(modalInput.value);
+            } else if (isConfirm) {
+                resolve(true);
+            } else {
+                resolve(true); // Alert finishes
+            }
+            removeHandlers();
+        };
+
+        const cancelHandler = () => {
+            hideModal();
+            if (isPrompt) {
+                resolve(null);
+            } else if (isConfirm) {
+                resolve(false);
+            }
+            removeHandlers();
+        };
+
+        const keyHandler = (e) => {
+            if (modalOverlay.classList.contains('pointer-events-none')) return; // Check if modal is visible
+            
+            if (e.key === 'Enter') {
+                e.preventDefault(); 
+                confirmHandler();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                 if (isPrompt || isConfirm) {
+                    cancelHandler();
+                } else {
+                    confirmHandler();
+                }
+            }
+        };
+
+        const removeHandlers = () => {
+            modalConfirmBtn.removeEventListener('click', confirmHandler);
+            modalCancelBtn.removeEventListener('click', cancelHandler);
+            document.removeEventListener('keydown', keyHandler);
+        };
+        
+        modalConfirmBtn.addEventListener('click', confirmHandler);
+        modalCancelBtn.addEventListener('click', cancelHandler);
+        document.addEventListener('keydown', keyHandler);
+    });
+}
+
+function hideModal() {
+    // Hide modal with animation
+    modalOverlay.classList.add('opacity-0', 'pointer-events-none');
+    document.getElementById('customModal').classList.add('scale-95');
+}
+
+// Global replacements
+async function customAlert(message) {
+    await showModal('Alert', message, false, false);
+}
+
+async function customPrompt(message, defaultValue = '') {
+    return await showModal('Input Required', message, true, false, defaultValue);
+}
+
+async function customConfirm(message) {
+    return await showModal('Confirm Action', message, false, true);
+}
+
+
+// =====================
+// Admin Lock System
+// =====================
+let adminPass = localStorage.getItem('adminPass') || null;
+
+if(!adminPass){
+    const p = await customPrompt('Set an Admin Password (You must remember this!)'); // PROMPT
+    if(p && p.trim() !== ''){
+        adminPass = p.trim();
+        localStorage.setItem('adminPass', adminPass);
+    } else {
+        await customAlert('Password is required! Reloading...'); // ALERT
+        // location.reload(); // Reload commented out for in-browser testing convenience
+    }
+}
+
+async function verifyAdmin(){
+    const x = await customPrompt('Enter Admin Password:'); // PROMPT
+    return x === adminPass;
+}
+
+async function changeAdminPassword(){
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // ALERT + ASYNC VERIFY
+    const newp = await customPrompt('Enter New Admin Password (Leave blank to cancel):'); // PROMPT
+    if(newp && newp.trim() !== ''){
+        adminPass = newp.trim();
+        localStorage.setItem('adminPass', adminPass);
+        await customAlert('Password changed successfully.'); // ALERT
+    } else {
+        await customAlert('Cancelled or Invalid Password.'); // ALERT
+    }
+}
+
+
+// =====================
+// Developer Details Function (New)
+// =====================
+async function showDeveloperDetails() {
+    await customAlert(
+        'This app is developed by Md. Mohaiminul Islam'
+    );
+}
+
+// =====================
+// PDF + Folder System: Nested Support, Data Migration, and Recycle Bin
+// =====================
+
+// Load data from Local Storage
+let rawData = JSON.parse(localStorage.getItem('pdfFolders'));
+let rootFolder;
+
+// Load Recycle Bin data
+let recycleBin = JSON.parse(localStorage.getItem('recycleBin')) || [];
+
+
+// --- Data Migration Logic (Old Array structure -> New Nested structure) ---
+if (rawData && !rawData.subfolders && typeof rawData === 'object' && !Array.isArray(rawData)) {
+    console.log("Migrating old data structure...");
+    let newSubfolders = {};
+    
+    for (const folderName in rawData) {
+        if (Array.isArray(rawData[folderName])) {
+            newSubfolders[folderName] = {
+                files: rawData[folderName],
+                subfolders: {}
+            };
+        }
+    }
+    
+    rootFolder = { files: [], subfolders: newSubfolders };
+    localStorage.setItem('pdfFolders', JSON.stringify(rootFolder));
+    if (Object.keys(newSubfolders).length > 0) {
+        await customAlert('Old folders successfully migrated to subfolder mode.'); // ALERT
+    }
+
+} else if (rawData) {
+    rootFolder = rawData;
+} else {
+    rootFolder = { files: [], subfolders: {} };
+}
+
+// =====================
+// Save Function
+// =====================
+function save(){ 
+    localStorage.setItem('pdfFolders', JSON.stringify(rootFolder));
+    localStorage.setItem('recycleBin', JSON.stringify(recycleBin));
+}
+
+
+// =====================
+// Global Multi-Delete Array and Toggle Logic
+// =====================
+let selectedItems = []; // { type: 'file'/'folder', path: 'folder/name', index: fileIndex (only for files) }
+const multiDeleteBtn = document.getElementById('multiDeleteBtn');
+const folderDiv = document.getElementById('folders');
+const folderList = document.getElementById('folderList');
+const fileInput = document.getElementById('fileInput');
+
+function toggleSelectedItem(type, path, index = null) {
+    // ID for folder: "folder/path"
+    // ID for file: "folder/path-index"
+    const id = index !== null ? `${path}-${index}` : path;
+    
+    const existingIndex = selectedItems.findIndex(item => {
+        const itemId = item.index !== undefined ? `${item.path}-${item.index}` : item.path;
+        return itemId === id;
+    });
+
+    if (existingIndex > -1) {
+        selectedItems.splice(existingIndex, 1); // Delete
+    } else {
+        selectedItems.push({ type: type, path: path, index: index }); // Add
+    }
+    
+    // Show/Hide button
+    multiDeleteBtn.style.display = selectedItems.length > 0 ? 'block' : 'none';
+}
+
+
+// --- Core Navigation Utility: Find folder object by path ---
+function getPath(path){
+    if(!path) return rootFolder; // Root folder
+    const parts = path.split('/').filter(p => p.trim() !== '');
+    let current = rootFolder;
+    for(const part of parts){
+        if(!current.subfolders || !current.subfolders[part]){
+            return null; // Folder path not found
+        }
+        current = current.subfolders[part];
+    }
+    return current;
+}
+
+
+// --- File Counting Utility (Recursive) ---
+function countFiles(folderObj){
+    if(!folderObj) return 0;
+    let count = (folderObj.files || []).length;
+    for(let sub in folderObj.subfolders){
+        count += countFiles(folderObj.subfolders[sub]);
+    }
+    return count;
+}
+
+// Function to prompt for subfolder creation under an existing folder
+async function promptForSubfolder(currentPath) {
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // ALERT + ASYNC VERIFY
+    
+    const subfolderName = await customPrompt(`Enter name for new subfolder under "${currentPath}":`, `Subfolder Name`); // PROMPT
+    
+    if (subfolderName === null || subfolderName.trim() === '' || subfolderName.trim() === 'Subfolder Name') {
+        return; // Cancelled or empty input
+    }
+    
+    const fullPath = `${currentPath}/${subfolderName.trim()}`;
+    
+    document.getElementById('folderPath').value = fullPath;
+    await createFolder(); 
+}
+
+
+// --- Folder Rendering (Recursively) ---
+function renderFolder(folderObj, path, targetDiv, isSidebar = false) {
+    if (!folderObj.subfolders) return;
+
+    for(let fName in folderObj.subfolders){
+        const subPath = path ? `${path}/${fName}` : fName;
+        const safeId = sanitizeId(subPath);
+        const subFolderObj = folderObj.subfolders[fName];
+        const fileCount = countFiles(subFolderObj);
+        
+        const isSelected = selectedItems.some(item => item.type === 'folder' && item.path === subPath);
+
+
+        if(isSidebar){
+            // --- Sidebar Folder Item ---
+            const side = document.createElement('div');
+            const level = subPath.split('/').length - 1; 
+            
+            side.className = `sidebar-folder-item p-2 rounded-lg transition duration-150 hover:bg-gray-200 dark:hover:bg-gray-700 bg-white dark:bg-gray-800 shadow-sm`;
+            side.style.paddingLeft = `${(level * 16) + 12}px`; 
+
+            const header = document.createElement('div');
+            header.className = 'flex justify-between items-center';
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'font-medium cursor-pointer text-gray-700 dark:text-gray-200 truncate flex-grow';
+            nameSpan.textContent = `📁 ${fName} (${fileCount})`;
+            nameSpan.onclick = () => {
+                toggle(safeId);
+                const mainFolderDiv = document.getElementById(`main_fld_${safeId}`);
+                if (mainFolderDiv) mainFolderDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'flex space-x-1 flex-shrink-0';
+
+            const renameBtn = document.createElement('button');
+            renameBtn.className = 'p-1 rounded-full text-primary hover:bg-gray-200 dark:hover:bg-gray-700 transition hover:scale-110';
+            renameBtn.title = 'Rename Folder';
+            // NEW ICON ADDED
+            renameBtn.innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-9-1.414l9.293-9.293M10 10l9.293-9.293"></path></svg>';
+            renameBtn.onclick = (e) => { e.stopPropagation(); renameFolderPrompt(subPath); }; 
+
+            const delBtn = document.createElement('button');
+            delBtn.className = 'p-1 rounded-full text-red-500 hover:bg-gray-200 dark:hover:bg-gray-700 transition hover:scale-110';
+            delBtn.title = 'Delete Folder (Move to Bin)';
+            delBtn.innerHTML = '🗑️';
+            delBtn.onclick = (e) => { e.stopPropagation(); deleteFolderToRecycleBin(subPath); }; // BIN FUNCT
+            
+            actionsDiv.appendChild(renameBtn);
+            actionsDiv.appendChild(delBtn);
+
+            header.appendChild(nameSpan);
+            header.appendChild(actionsDiv);
+            side.appendChild(header);
+            
+            targetDiv.appendChild(side);
+
+            // Recursive call for subfolders rendering
+            renderFolder(subFolderObj, subPath, targetDiv, true); 
+
+
+        } else {
+            // --- Folder Box on Main Page ---
+            const div = document.createElement('div');
+            div.id = `main_fld_${safeId}`; 
+            div.className = 'folder bg-gray-50 dark:bg-gray-900 p-4 rounded-lg transition-colors duration-300 border border-gray-200 dark:border-gray-700';
+            
+            const titleHtml = `
+                <div class='folder-title flex justify-between items-center pb-2 border-b border-gray-200 dark:border-gray-700 mb-2'>
+                    <div class="flex items-center">
+                            <input type="checkbox" id="chk_fld_${safeId}" class="mr-3 w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 transition duration-150" 
+                                onchange="toggleSelectedItem('folder', '${subPath.replace(/'/g, "\\'")}')" ${isSelected ? 'checked' : ''} />
+
+                        <div class="flex items-center text-xl font-bold cursor-pointer text-primary dark:text-accent hover:text-blue-500 dark:hover:text-emerald-400 transition" onclick="toggle('${safeId}')">
+                            <span class="mr-2">📁</span> ${fName} (${fileCount})
+                        </div>
+                    </div>
+                    <div class="flex space-x-3 flex-shrink-0">
+                        <button class="flex items-center text-lg font-medium text-accent dark:text-emerald-400 hover:text-emerald-600 transition hover:scale-110" title="Create Subfolder" onclick="promptForSubfolder('${subPath.replace(/'/g, "\\'")}')">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        </button>
+                        
+                        <button class="flex items-center text-sm font-medium text-secondary dark:text-gray-300 hover:text-blue-500 transition hover:scale-105" title="Rename Folder" onclick="renameFolderPrompt('${subPath.replace(/'/g, "\\'")}')">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-9-1.414l9.293-9.293M10 10l9.293-9.293"></path></svg>
+                        </button>
+                        
+                        <button class="flex items-center text-sm font-medium text-red-500 hover:text-red-700 transition hover:scale-105" title="Delete Folder (Move to Bin)" onclick="deleteFolderToRecycleBin('${subPath.replace(/'/g, "\\'")}')">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                <div id="${safeId}" class="space-y-2 pt-2" style="display:none"></div>
+            `;
+            div.innerHTML = titleHtml;
+            targetDiv.appendChild(div);
+
+            // Load files for the folder
+            loadFiles(subPath); 
+
+            // Recursive call for subfolders rendering
+            renderFolder(subFolderObj, subPath, document.getElementById(safeId), false); 
+        }
+    }
+}
+
+
+function loadFolders(){
+    // Hide search results and restore normal view
+    document.getElementById('searchResults').style.display = 'none';
+    
+    folderDiv.innerHTML = '';
+    folderList.innerHTML = '';
+    
+    // Toggle button to update checkbox status
+    multiDeleteBtn.style.display = selectedItems.length > 0 ? 'block' : 'none';
+
+    // Start rendering from the root folder
+    renderFolder(rootFolder, '', folderDiv, false); // Main display
+    renderFolder(rootFolder, '', folderList, true); // Sidebar
+    
+    // If no folders exist
+    if(Object.keys(rootFolder.subfolders).length === 0){
+        folderList.innerHTML = '<p class="text-sm text-center text-gray-500 dark:text-gray-400">No folders created.</p>';
+        folderDiv.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400 mt-8">No files or folders found.</p>';
+    }
+}
+
+
+// Toggle folder
+function toggle(safeId){
+    const x = document.getElementById(safeId);
+    if(!x) return;
+    const isHidden = x.style.display === 'none' || x.style.display === '';
+
+    document.querySelectorAll('.folder > div[id^="fld_"]').forEach(div => {
+        if(div.id !== safeId) div.style.display = 'none';
+    });
+    
+    x.style.display = isHidden ? 'block' : 'none';
+}
+
+
+// Create folder (including subfolders)
+async function createFolder(){
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // ALERT + ASYNC VERIFY
+    const path = document.getElementById('folderPath').value.trim();
+    if(!path) return await customAlert('Please provide a folder path.'); // ALERT
+
+    const parts = path.split('/').filter(p => p.trim() !== '');
+    if(parts.length === 0) return await customAlert('Folder name is required.'); // ALERT
+    
+    let current = rootFolder;
+
+    for(let i = 0; i < parts.length; i++){
+        const name = parts[i];
+        
+        if(!current.subfolders) current.subfolders = {}; 
+        
+        if(!current.subfolders[name]){
+            current.subfolders[name] = { files: [], subfolders: {} };
+        }
+        
+        current = current.subfolders[name];
+    }
+    
+    const newSafeId = sanitizeId(path);
+
+    save(); 
+    loadFolders();
+    
+    const newFolderDiv = document.getElementById(newSafeId);
+    if (newFolderDiv) {
+        toggle(newSafeId);
+        const mainFolderDiv = document.getElementById(`main_fld_${newSafeId}`);
+        if (mainFolderDiv) mainFolderDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    document.getElementById('folderPath').value = '';
+    await customAlert(`Folder path "${path}" created successfully.`); // ALERT
+}
+
+
+// Rename folder
+async function renameFolderPrompt(oldPath){
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // ALERT + ASYNC VERIFY
+
+    const parts = oldPath.split('/');
+    const oldName = parts.pop();
+    const parentPath = parts.join('/');
+    const parent = getPath(parentPath);
+
+    if(!parent || !parent.subfolders || !parent.subfolders[oldName]) return await customAlert('Folder not found.'); // ALERT
+
+    const newName = await customPrompt(`Rename folder "${oldPath}":`, oldName); // PROMPT
+    if(newName === null) return; 
+    const n = newName.trim();
+    if(!n) return await customAlert('Folder name cannot be empty.'); // ALERT
+    if(n === oldName) return; 
+    if(parent.subfolders[n]) return await customAlert('A folder with this name already exists.'); // ALERT
+
+    // Update if selected in checkbox
+    selectedItems = selectedItems.map(item => {
+        if (item.type === 'folder' && item.path === oldPath) {
+            item.path = `${parentPath ? parentPath + '/' : ''}${n}`;
+        } else if (item.type === 'file' && item.path === oldPath) {
+            item.path = `${parentPath ? parentPath + '/' : ''}${n}`;
+        }
+        return item;
+    });
+
+    parent.subfolders[n] = parent.subfolders[oldName];
+    delete parent.subfolders[oldName];
+    save();
+    loadFolders();
+    await customAlert(`Folder renamed to "${parentPath ? parentPath + '/' : ''}${n}".`); // ALERT
+}
+
+
+// Move folder to Recycle Bin
+async function deleteFolderToRecycleBin(path){
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // ALERT + ASYNC VERIFY
+
+    const parts = path.split('/');
+    const name = parts.pop();
+    const parentPath = parts.join('/');
+    const parent = getPath(parentPath);
+    const folderObj = parent && parent.subfolders ? parent.subfolders[name] : null;
+
+    if(!folderObj) return await customAlert('Folder not found.'); // ALERT
+
+    const filesCount = countFiles(folderObj); 
+    let ok;
+
+    if(filesCount > 0 || (folderObj.subfolders && Object.keys(folderObj.subfolders).length > 0)){
+        ok = await customConfirm(`Folder "${path}" contains ${filesCount} files and ${Object.keys(folderObj.subfolders || {}).length} subfolders. Are you sure you want to move it to the Recycle Bin?`); // CONFIRM
+    } else {
+        ok = await customConfirm(`Are you sure you want to move folder "${path}" to the Recycle Bin?`); // CONFIRM
+    }
+
+    if(!ok) return;
+    
+    // Move to Recycle Bin
+    recycleBin.push({
+        type: 'folder', 
+        path: path, 
+        data: folderObj, 
+        deletedAt: new Date().toISOString() 
+    });
+
+    // Delete from main folder
+    delete parent.subfolders[name];
+    
+    // If selected, remove from selectedItems
+    selectedItems = selectedItems.filter(item => !item.path.startsWith(path));
+    
+    save();
+    loadFolders();
+    await customAlert(`Folder "${path}" moved to Recycle Bin.`); // ALERT
+}
+
+
+// =====================
+// File Upload, Delete, Rename
+// =====================
+
+fileInput.addEventListener('change', async ()=>{
+    const file = fileInput.files[0];
+    if(!file) return;
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // ALERT + ASYNC VERIFY
+
+    const folderPath = await customPrompt('Which folder path should this PDF be saved in? (e.g: "Science/Notes")'); // PROMPT
+    if(!folderPath) return;
+    const targetFolder = getPath(folderPath.trim());
+
+    if(!targetFolder) return await customAlert('Folder not found.'); // ALERT
+    
+    // --- Progress Bar Setup ---
+    const progressContainer = document.getElementById('uploadProgressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressBarText = document.getElementById('progressBarText');
+    const progressFileName = document.getElementById('progressFileName');
+
+    fileInput.disabled = true;
+    document.getElementById('dropZone').textContent = 'File is loading, please wait...';
+    progressFileName.textContent = file.name;
+    progressContainer.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressBarText.textContent = '0%';
+    // --- End Progress Bar Setup ---\
+
+    const reader = new FileReader();
+
+    // Progress event handler
+    reader.onprogress = function(e) {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percent + '%';
+            progressBarText.textContent = percent + '%';
+        }
+    };
+
+    reader.onload = async x => {
+        if (!targetFolder.files) targetFolder.files = []; 
+        targetFolder.files.push({name:file.name,url:x.target.result});
+        save(); loadFolders();
+        
+        // --- Hide and Reset Progress Bar ---
+        progressContainer.style.display = 'none';
+        fileInput.disabled = false;
+        document.getElementById('dropZone').innerHTML = '<span class="text-3xl mb-2 block">⬇️</span>Drag and drop PDF files here';
+        fileInput.value = '';
+        // --- End Hide and Reset Progress Bar ---
+
+        await customAlert(`File "${file.name}" saved in folder "${folderPath}".`); // ALERT
+    };
+    reader.readAsDataURL(file);
+});
+
+
+// Function: Render single file item
+function renderFileItem(file, folderPath, index, query = '') {
+    const safe = sanitizeId(folderPath);
+    const escapedPath = folderPath.replace(/'/g, "\\'");
+    const isSelected = selectedItems.some(item => item.type === 'file' && item.path === folderPath && item.index === index);
+
+    const item = document.createElement('div');
+    item.className = 'pdf-item pdf-item-instance bg-white dark:bg-gray-900 p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center shadow-md hover:shadow-xl transition duration-150 border border-transparent hover:border-accent';
+    item.setAttribute('data-folder-path', folderPath); // For search/sorting
+
+    const checkboxAndInfo = document.createElement('div');
+    checkboxAndInfo.className = 'flex items-center min-w-0';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.id = `chk_file_${safe}_${index}`;
+    checkbox.className = 'mr-3 w-4 h-4 text-red-600 bg-gray-100 border-gray-300 rounded focus:ring-red-500 dark:focus:ring-red-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600';
+    checkbox.setAttribute('onchange', `toggleSelectedItem('file', '${escapedPath}', ${index})`);
+    if(isSelected) checkbox.checked = true;
+
+    const fileInfo = document.createElement('span');
+    fileInfo.className = 'font-medium text-gray-800 dark:text-gray-100 mb-2 sm:mb-0 truncate file-name-text';
+    fileInfo.setAttribute('data-full-name', file.name);
+    
+    // Highlighting logic
+    let displayName = file.name;
+    if (query.length > 0) {
+        const nameLower = file.name.toLowerCase();
+        const queryLower = query.toLowerCase();
+        const startIndex = nameLower.indexOf(queryLower);
+        
+        if (startIndex > -1) {
+            const endIndex = startIndex + queryLower.length;
+            const before = file.name.substring(0, startIndex);
+            const match = file.name.substring(startIndex, endIndex);
+            const after = file.name.substring(endIndex);
+            displayName = `${before}<span class="highlight">${match}</span>${after}`;
+        }
+    }
+    fileInfo.innerHTML = displayName;
+
+    checkboxAndInfo.appendChild(checkbox);
+    checkboxAndInfo.appendChild(fileInfo);
+
+
+    const actionsSpan = document.createElement('span');
+    actionsSpan.className = 'flex space-x-3 text-xs font-semibold';
+    actionsSpan.innerHTML = `
+        <a href='${file.url}' download='${file.name}' class='text-accent hover:text-emerald-500 transition hover:scale-110' title="Download">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        </a>
+        
+        <button class='text-secondary hover:text-blue-500 transition hover:scale-110' onclick="renameFile('${escapedPath}',${index}, '${file.name.replace(/'/g, "\\'")}')" title="Rename">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-9-1.414l9.293-9.293M10 10l9.293-9.293"></path></svg>
+        </button>
+
+        <button class='text-red-500 hover:text-red-700 transition hover:scale-110' onclick="deleteFileToRecycleBin('${escapedPath}',${index})" title="Delete">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+        </button>
+    `;
+    
+    item.appendChild(checkboxAndInfo);
+    item.appendChild(actionsSpan);
+    return item;
+}
+
+
+// Render files inside the folder
+function loadFiles(folderPath){
+    const safe = sanitizeId(folderPath);
+    const div = document.getElementById(safe);
+    if(!div) return;
+    
+    const folderObj = getPath(folderPath);
+    if(!folderObj) return;
+
+    div.innerHTML = '';
+
+    (folderObj.files || []).forEach((f,i)=>{
+        const item = renderFileItem(f, folderPath, i, ''); // Use render function
+        div.appendChild(item);
+    });
+}
+
+// Move file to Recycle Bin
+async function deleteFileToRecycleBin(folderPath, index){
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // ALERT + ASYNC VERIFY
+    const targetFolder = getPath(folderPath);
+    if(!targetFolder || !targetFolder.files || !targetFolder.files[index]) return;
+    
+    const file = targetFolder.files[index];
+    const ok = await customConfirm(`Are you sure you want to move file "${file.name}" to the Recycle Bin?`); // CONFIRM
+    if(!ok) return;
+
+    // Move to Recycle Bin
+    recycleBin.push({
+        type: 'file', 
+        path: folderPath, 
+        data: file, 
+        deletedAt: new Date().toISOString() 
+    });
+
+    // Delete from main folder
+    targetFolder.files.splice(index,1);
+
+    // Remove this file from the selectedItems array
+    selectedItems = selectedItems.filter(item => !(item.type === 'file' && item.path === folderPath && item.index === index));
+    
+    save(); 
+    loadFolders(); // Re-render completely so indices are correct
+    await customAlert(`File "${file.name}" moved to Recycle Bin.`); // ALERT
+}
+
+
+async function renameFile(folderPath, index, currentName){
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // ALERT + ASYNC VERIFY
+    const targetFolder = getPath(folderPath);
+    if(!targetFolder || !targetFolder.files || !targetFolder.files[index]) return await customAlert('File data error.'); // ALERT
+    
+    const newName = await customPrompt(`Rename file "${currentName}":`, currentName); // PROMPT
+    
+    if(newName === null) return; 
+    
+    const n = newName.trim();
+    if(!n || n === currentName) return;
+
+    targetFolder.files[index].name = n;
+    save(); 
+    loadFolders();
+    await customAlert(`File renamed to "${n}".`); // ALERT
+}
+
+// --- Multiple Delete Function (Now moves to Bin) ---
+async function multiDeleteSelected(){
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // ALERT + ASYNC VERIFY
+
+    if(selectedItems.length === 0) return await customAlert('No files or folders selected for deletion.'); // ALERT
+
+    const totalFiles = selectedItems.filter(item => item.type === 'file').length;
+    const totalFolders = selectedItems.filter(item => item.type === 'folder').length;
+    
+    const ok = await customConfirm(`Move ${totalFiles} files and ${totalFolders} folders to the Recycle Bin?`); // CONFIRM
+    if(!ok) return;
+
+    // 1. Move Folders (Delete deepest folders first)
+    selectedItems
+        .filter(item => item.type === 'folder')
+        .sort((a, b) => b.path.split('/').length - a.path.split('/').length) 
+        .forEach(item => {
+            const path = item.path;
+            const parts = path.split('/');
+            const name = parts.pop();
+            const parentPath = parts.join('/');
+            const parent = getPath(parentPath);
+            
+            if(parent && parent.subfolders && parent.subfolders[name]){
+                const folderObj = parent.subfolders[name];
+                // Move to Recycle Bin
+                recycleBin.push({
+                    type: 'folder', 
+                    path: path, 
+                    data: folderObj, 
+                    deletedAt: new Date().toISOString() 
+                });
+                delete parent.subfolders[name];
+            }
+        });
+
+    // 2. Move Files
+    const filesToDeleteByFolder = selectedItems
+        .filter(item => item.type === 'file')
+        .reduce((acc, item) => {
+            if (!acc[item.path]) acc[item.path] = [];
+            acc[item.path].push(item.index);
+            return acc;
+        }, {});
+        
+    for(const folderPath in filesToDeleteByFolder){
+        const targetFolder = getPath(folderPath);
+        if(!targetFolder || !targetFolder.files) continue;
+
+        filesToDeleteByFolder[folderPath].sort((a, b) => b - a);
+
+        filesToDeleteByFolder[folderPath].forEach(index => {
+            const file = targetFolder.files[index];
+            // Move to Recycle Bin
+            recycleBin.push({
+                type: 'file', 
+                path: folderPath, 
+                data: file, 
+                deletedAt: new Date().toISOString() 
+            });
+            targetFolder.files.splice(index, 1);
+        });
+    }
+
+    // Reset
+    selectedItems = [];
+    multiDeleteBtn.style.display = 'none';
+    
+    save(); 
+    loadFolders();
+    await customAlert(`Successfully moved ${totalFiles} files and ${totalFolders} folders to the Recycle Bin.`); // ALERT
+}
+
+// =====================
+// Recycle Bin Management Functions
+// =====================
+async function showRecycleBin(){
+    // UI Toggle
+    document.getElementById('fileManagerView').style.display = 'none';
+    document.getElementById('recycleBinView').style.display = 'block';
+    document.getElementById('folderSidebar').style.display = 'none'; // Hide sidebar
+    document.getElementById('mainTitle').textContent = '🗑️ Note Basket - Recycle Bin';
+
+
+    const binContentDiv = document.getElementById('recycleBinContent');
+    binContentDiv.innerHTML = '';
+    
+    if(recycleBin.length === 0){
+        binContentDiv.innerHTML = '<p class="text-center text-gray-500 dark:text-gray-400 mt-8 text-lg">Recycle Bin is Empty.</p>';
+        return;
+    }
+
+    // Render items
+    recycleBin.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = 'pdf-item bg-gray-100 dark:bg-gray-800 p-3 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center shadow-sm hover:shadow-lg transition duration-150 border border-gray-200 dark:border-gray-700';
+        
+        let typeIcon = item.type === 'file' ? '📄' : '🗂️';
+        let name = item.type === 'file' ? item.data.name : item.path;
+        let originalPath = item.path;
+        let deletedDate = new Date(item.deletedAt).toLocaleString('en-US'); // Changed to English locale
+
+        div.innerHTML = `
+            <div class="flex items-center min-w-0">
+                <span class="mr-3 text-xl">${typeIcon}</span>
+                <div class="min-w-0">
+                    <span class="font-bold text-gray-800 dark:text-gray-100 truncate block">${name}</span>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">Original Path: ${originalPath}</span>
+                    <span class="text-xs text-gray-500 dark:text-gray-400 block">Deleted At: ${deletedDate}</span>
+                </div>
+            </div>
+            <div class="flex space-x-3 text-sm font-semibold mt-2 sm:mt-0">
+                <button class='flex items-center text-accent hover:text-emerald-500 transition hover:scale-110' onclick="restoreItem(${index})" title="Restore">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m3.987-2.222A4.001 4.001 0 0118 9v5m-1.582-2a8.001 8.001 0 01-15.356-2L8.582 15m3.987 2.222A4.001 4.001 0 006 15v-5"></path></svg>
+                    Restore
+                </button>
+                <button class='flex items-center text-red-500 hover:text-red-700 transition hover:scale-110' onclick="permanentlyDeleteItem(${index})" title="Permanently Delete">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Delete
+                </button>
+            </div>
+        `;
+        binContentDiv.appendChild(div);
+    });
+}
+
+// Permanently delete file/folder from Recycle Bin
+async function permanentlyDeleteItem(index){
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // Password check added
+
+    const item = recycleBin[index];
+    const name = item.type === 'file' ? item.data.name : item.path;
+
+    const ok = await customConfirm(`Are you sure you want to permanently delete the item "${name}"? This action is irreversible!`); // CONFIRM
+    if(!ok) return;
+
+    recycleBin.splice(index, 1);
+    save();
+    showRecycleBin(); // Update Recycle Bin view
+}
+
+// Restore file/folder from Recycle Bin
+async function restoreItem(index){
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // Password check added
+    
+    const item = recycleBin[index];
+    const originalPath = item.path;
+    const targetFolder = getPath(originalPath);
+
+    if(!targetFolder){
+        await customAlert(`Error: Original folder path ("${originalPath}") no longer exists. Please create the folder first to restore.`); // ALERT
+        return;
+    }
+    
+    const name = item.type === 'file' ? item.data.name : originalPath;
+
+    const ok = await customConfirm(`Are you sure you want to restore the item "${name}"?`); // CONFIRM
+    if(!ok) return;
+
+    if(item.type === 'file'){
+        if(targetFolder.files.some(f => f.name === item.data.name)){
+            await customAlert(`Restore failed: A file named "${item.data.name}" already exists in the destination folder ("${originalPath}").`); // ALERT
+            return;
+        }
+        targetFolder.files.push(item.data);
+        await customAlert(`File restored to folder "${originalPath}".`); // ALERT
+    } else if (item.type === 'folder'){
+        const parts = originalPath.split('/');
+        const folderName = parts.pop();
+        const parentPath = parts.join('/');
+        const parent = getPath(parentPath);
+        
+        if(!parent){
+            await customAlert(`Error: Original parent folder path ("${parentPath}") no longer exists. Please create the parent folder first to restore.`); // ALERT
+            return;
+        }
+        if(parent.subfolders[folderName]){
+             await customAlert(`Restore failed: A folder named "${folderName}" already exists in the destination path.`); // ALERT
+            return;
+        }
+        parent.subfolders[folderName] = item.data;
+        await customAlert(`Folder restored to path "${originalPath}".`); // ALERT
+    }
+
+    // Remove from Bin on success
+    recycleBin.splice(index, 1);
+    save();
+    showRecycleBin(); // Update Recycle Bin view
+    loadFolders(); // Update File Manager
+}
+
+// Empty Recycle Bin
+async function emptyRecycleBin(){
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // Password check added
+
+    if(recycleBin.length === 0) return await customAlert('Recycle Bin is already empty.'); // ALERT
+
+    const ok = await customConfirm(`Are you sure you want to permanently delete all ${recycleBin.length} items in the Recycle Bin? This process is irreversible!`); // CONFIRM
+    if(!ok) return;
+
+    recycleBin = [];
+    save();
+    showRecycleBin(); 
+    await customAlert('Recycle Bin emptied successfully.'); // ALERT
+}
+
+
+// =====================
+// Dark Mode
+// =====================
+document.getElementById('darkModeToggle').onclick = ()=>{
+    document.body.classList.toggle('dark');
+    const isDark = document.body.classList.contains('dark');
+    localStorage.setItem('darkMode', isDark ? 'true' : 'false');
+    
+    const iconContainer = document.getElementById('darkModeToggle').querySelector('svg');
+    if (isDark) {
+        // Sun icon for dark mode 
+        iconContainer.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>`; 
+    } else {
+        // Moon icon for light mode
+        iconContainer.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 12.008 12.008 0 0012.004 21a12.008 12.008 0 008.35-5.646z"></path>`; 
+    }
+};
+
+// Dark Mode Default Setup
+const storedMode = localStorage.getItem('darkMode');
+// Ensure Dark Mode is the default state on first load 
+const isDarkDefault = storedMode === null || storedMode === 'true'; 
+
+if (isDarkDefault) {
+    document.body.classList.add('dark');
+    localStorage.setItem('darkMode', 'true'); // Ensure it's stored as 'true'
+    const iconContainer = document.getElementById('darkModeToggle').querySelector('svg');
+    if (iconContainer) {
+        // Sun icon when dark mode is active
+        iconContainer.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>`; 
+    }
+}
+
+
+// =====================
+// Search Function (Highlighting and Move to Top)
+// =====================
+
+// Function: Recursively collect all files
+function getAllFilesRecursive(folderObj, path, fileList) {
+    (folderObj.files || []).forEach((file, index) => {
+        fileList.push({ file: file, path: path, index: index });
+    });
+
+    for (const subName in folderObj.subfolders) {
+        const subPath = path ? `${path}/${subName}` : subName;
+        getAllFilesRecursive(folderObj.subfolders[subName], subPath, fileList);
+    }
+}
+
+
+const search = document.getElementById('search');
+const searchResultsDiv = document.getElementById('searchResults');
+
+search.addEventListener('input', ()=>{
+    const text = search.value.trim().toLowerCase();
+    
+    // Set default state for all folders and file items
+    document.querySelectorAll('.folder').forEach(f => f.style.display = 'block');
+    document.querySelectorAll('.folder > div[id^="fld_"]').forEach(div => div.style.display = 'none');
+    document.querySelectorAll('.pdf-item-instance').forEach(item => item.style.display = 'flex');
+
+    if (text.length > 0) {
+        const allFiles = [];
+        getAllFilesRecursive(rootFolder, '', allFiles);
+        
+        searchResultsDiv.innerHTML = '<h4 class="text-xl font-bold text-accent dark:text-primary border-b pb-2 mb-4">🔎 Search Results (Moved Up)</h4>';
+        
+        let matchFound = false;
+
+        allFiles.forEach(item => {
+            const fileNameLower = item.file.name.toLowerCase();
+            const isMatch = fileNameLower.includes(text);
+
+            // Hide files in the main folder view
+            const fileElement = document.getElementById(`chk_file_${sanitizeId(item.path)}_${item.index}`);
+            if (fileElement) {
+                const itemDiv = fileElement.closest('.pdf-item');
+                if (itemDiv) itemDiv.style.display = 'none'; 
+            }
+
+
+            if (isMatch) {
+                // Add matching file to the search results section
+                const itemElement = renderFileItem(item.file, item.path, item.index, text);
+                
+                // Add original folder name
+                const pathLabel = document.createElement('span');
+                pathLabel.className = 'text-xs text-secondary dark:text-gray-400 mt-1 block italic';
+                pathLabel.textContent = `Folder: ${item.path || 'Root'}`;
+                itemElement.querySelector('.flex').appendChild(pathLabel); // Add folder path next to file name
+
+                searchResultsDiv.appendChild(itemElement);
+                matchFound = true;
+            }
+        });
+
+        // Hide folder view and show search results
+        folderDiv.style.display = 'none';
+        searchResultsDiv.style.display = 'block';
+
+        if (!matchFound) {
+             searchResultsDiv.innerHTML = '<h4 class="text-xl font-bold text-accent dark:text-primary border-b pb-2 mb-4">🔎 Search Results (Moved Up)</h4><p class="text-center text-gray-500 dark:text-gray-400 mt-4">No matches found.</p>';
+        }
+
+    } else {
+        // Restore normal view if search is empty
+        searchResultsDiv.style.display = 'none';
+        folderDiv.style.display = 'block';
+        loadFolders();
+    }
+});
+
+
+// =====================
+// Advanced Drag and Drop
+// =====================
+const dropZone = document.getElementById('dropZone');
+
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+});
+
+function preventDefaults (e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+dropZone.addEventListener('dragenter', ()=> dropZone.classList.add('drag-hover'), false);
+dropZone.addEventListener('dragover', ()=> dropZone.classList.add('drag-hover'), false);
+dropZone.addEventListener('dragleave', ()=> dropZone.classList.remove('drag-hover'), false);
+
+dropZone.addEventListener('drop', handleDrop, false);
+
+async function handleDrop(e) {
+    dropZone.classList.remove('drag-hover');
+
+    if(!(await verifyAdmin())) return await customAlert('Incorrect Password!'); // ALERT + ASYNC VERIFY
+
+    const file = e.dataTransfer.files[0];
+    if(!file) return;
+    if(file.type !== 'application/pdf') return await customAlert('Only PDF files can be uploaded.'); // ALERT
+
+    const folderPath = await customPrompt('Which folder path should this PDF be saved in? (e.g: "Science/Notes")'); // PROMPT
+    if(!folderPath) return;
+    const targetFolder = getPath(folderPath.trim());
+
+    if(!targetFolder) return await customAlert('Folder not found.'); // ALERT
+    
+    // --- Progress Bar Setup ---
+    const progressContainer = document.getElementById('uploadProgressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressBarText = document.getElementById('progressBarText');
+    const progressFileName = document.getElementById('progressFileName');
+
+    fileInput.disabled = true;
+    dropZone.textContent = 'File is loading, please wait...';
+    progressFileName.textContent = file.name;
+    progressContainer.style.display = 'block';
+    progressBar.style.width = '0%';
+    progressBarText.textContent = '0%';
+    // --- End Progress Bar Setup ---
+
+    const reader = new FileReader();
+
+    // Progress event handler
+    reader.onprogress = function(e) {
+        if (e.lengthComputable) {
+            const percent = Math.round((e.loaded / e.total) * 100);
+            progressBar.style.width = percent + '%';
+            progressBarText.textContent = percent + '%';
+        }
+    };
+
+
+    reader.onload = async x=>{
+        if (!targetFolder.files) targetFolder.files = []; 
+        targetFolder.files.push({name:file.name,url:x.target.result});
+        save(); loadFolders();
+        
+        // --- Hide and Reset Progress Bar ---
+        progressContainer.style.display = 'none';
+        fileInput.disabled = false;
+        dropZone.innerHTML = '<span class="text-3xl mb-2 block">⬇️</span>Drag and drop PDF files here';
+        // --- End Hide and Reset Progress Bar ---
+
+        await customAlert(`File "${file.name}" saved in folder "${folderPath}".`); // ALERT
+    };
+    reader.readAsDataURL(file);
+}
+
+// FIX: Expose functions to the global window object
+window.showRecycleBin = showRecycleBin;
+window.changeAdminPassword = changeAdminPassword;
+window.showDeveloperDetails = showDeveloperDetails; // New function exposed
+window.createFolder = createFolder;
+window.promptForSubfolder = promptForSubfolder;
+window.renameFolderPrompt = renameFolderPrompt;
+window.deleteFolderToRecycleBin = deleteFolderToRecycleBin;
+window.deleteFileToRecycleBin = deleteFileToRecycleBin;
+window.renameFile = renameFile;
+window.multiDeleteSelected = multiDeleteSelected;
+window.permanentlyDeleteItem = permanentlyDeleteItem;
+window.restoreItem = restoreItem;
+window.emptyRecycleBin = emptyRecycleBin;
+window.toggleSelectedItem = toggleSelectedItem;
+window.toggle = toggle; 
+window.loadFolders = loadFolders; 
+
+// Initial UI Load
+loadFolders();
+})(); // End of async IIFE
+</script>
+
+</body>
+</html>
